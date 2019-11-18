@@ -10,9 +10,11 @@ How does the consumption of a prebiotic effect the gut microbiome?
 SCFAs, pH, Gases 
 Microbial community (diversity, changes in taxon abundance
 
+??????
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "~/Documents/UMich_Bio201_F19/")
+knitr::opts_knit$set(root.dir = "~/Documents/Bio201ThursPM/")
 ```
 
 # Load packages
@@ -37,7 +39,7 @@ myfunction <- function(x) {
 }
 
 # sequence variant information 
-sv_table <- read_delim("Lab7/raw_data/seq_variants_wide.csv",
+sv_table <- read_delim("~/Documents/Bio201ThursPM/final_project_data/shared_wkly.txt",
                             delim = ",", escape_double = FALSE, 
                             trim_ws = TRUE, na=c("NA"),
                             col_types = list()) %>%
