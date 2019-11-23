@@ -1,6 +1,6 @@
 ---
 title: "Bio201 Final Project"
-author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei"
+author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei", "Clarissa Halim" 
 date: "11/18/2019"
 output: html_document
 ---
