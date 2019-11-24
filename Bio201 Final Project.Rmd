@@ -30,19 +30,61 @@ set.seed(7)
 ### Sequence variants 
 Import shared/ESV/OTU table and format for phyloseq. Phyloseq works by matching rownames across matrix objects (This is similar to how we matched columns in joins of data frames). A two-dimensional matrix in R looks just like a data frame, however R matrices can be three-dimensional. A three-dimensional object is created when multiple two-dimensional objects are combined (we'll work through this in the upcoming sections). 
 ```{r}
+#convert txt to valid cvs, I have done this step, and upload "species_avg_shared.csv" to our reporsitory.
+
+#species_avg_shared <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/raw_data/species_avg_shared.txt",
+#                            delim = "\t", escape_double = FALSE, 
+#                            trim_ws = TRUE, na=c("NA"),
+#                           col_types = list()) %>%   #import txt
+# rename(participant_id_week = Participant_ID) %>% 
+#  select(-Semester)#don't need
+#  species_avg_shared$participant_id_week = paste(species_avg_shared$participant_id_week,
+#                                                 species_avg_shared$Study_week, 
+#                                                 sep="_") #create a combined name
+#write.csv(species_avg_shared,file="C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/curated_data/species_avg_shared.csv",quote=F,row.names = F)
+
+sv_table <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/curated_data/species_avg_shared.csv",
+                            delim = ",", escape_double = FALSE, 
+                            trim_ws = TRUE, na=c("NA"),
+                            col_types = list()) 
+sv_table %>% 
+  column_to_rownames(var = "participant_id_week") %>% 
+  as.matrix() %>%   #convert data frame to matrix object
+  otu_table(., taxa_are_rows = FALSE) #specify type of phyloseq object
 
 ```
 
 ### Taxa 
 Import taxonomy table and format for phyloseq.
 ```{r}
-
-
+taxa <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/curated_data/seqvar_classifications.csv",
+                            delim = ",", escape_double = FALSE, 
+                            trim_ws = TRUE, na=c("NA"),
+                            col_types = list()) %>%
+  column_to_rownames(var = "sv") %>% #sequence variants (OTUs) need to be made into row names 
+  as.matrix() %>%
+  tax_table(.)  #specify type of phyloseq object
 ```
 
 ### Participant data 
 Import sample data (where a sample is an individual microbiome sample) and format for phyloseq.
 ```{r}
+all_data_wkly <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/raw_data/all_data_wkly.txt", 
+                            delim = "\t", escape_double = FALSE, 
+                            trim_ws = TRUE, 
+                            col_types = cols(Bristol_numeric = col_number(),
+                                             Bristol_score = col_character(), 
+                                             pH = col_number())) %>% 
+  rename_all(tolower) %>% 
+  rename(participant_id_week = participant_id) %>% 
+  sample_data(.) #specify type of phyloseq object
+  
+all_data_wkly$participant_id_week = paste(all_data_wkly$participant_id,
+                                                 all_data_wkly$study_week, 
+                                                 sep="_")  #match with "sv_table"
+all_data_wkly_inner <- inner_join(x = all_data_wkly, y = sv_table, by = c( "participant_id_week")) %>% 
+                      select( participant_id_week, study_week, semester, supplement_consumed, quantity_compliant, frequency, ph_median, ph_mean, bristol_median, bristol_mean, blood_glucose_median, blood_glucose_mean, acetate_median, acetate_mean, butyrate_median ,butyrate_mean, propionate_median, propionate_mean)
+
 
 ```
 
@@ -50,9 +92,9 @@ Import sample data (where a sample is an individual microbiome sample) and forma
 # Create phyloseq objects
 Phyloseq is an R package that has a suite of functions that make microbial community anaylsis a bit simpler. https://joey711.github.io/phyloseq/index.html It requires the data to be structured in three critical files (1) sequence variant (or OTU) table that contains counts of each sequence; (2) Taxanomic information that contains classifications from Phylum to species for each sequence variant; (3) sample information, which is the participant information we have been working with so far this semester. We imported these three files in the section above, now we have to combine them into one object. 
 ```{r}
-#combine three phyloseq objects created above 
+physq_obj <- phyloseq(sv_table, taxa, all_data_wkly_inner) #combine three phyloseq objects created above 
 
-#view dimentions of new object 
+physq_obj #view dimentions of new object 
 ```
 
 # Richness
