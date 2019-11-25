@@ -43,14 +43,16 @@ Import shared/ESV/OTU table and format for phyloseq. Phyloseq works by matching 
 #                                                 sep="_") #create a combined name
 #write.csv(species_avg_shared,file="C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/curated_data/species_avg_shared.csv",quote=F,row.names = F)
 
-species_avg_shared<-read_delim("~/Documents/Bio201ThursPM/curated_data/species_avg_shared.csv",
+
+species_avg_shared<-read_delim("C:/Users/moonl/Desktop/Bio201ThursPM/curated_data/species_avg_shared.csv",
                             delim = ",", escape_double = FALSE, 
                             trim_ws = TRUE, na=c("NA"),
                             col_types = list()) 
-sv_table <- read_delim("~/Documents/Bio201ThursPM/curated_data/species_avg_shared.csv",
+sv_table <- read_delim("C:/Users/moonl/Desktop/Bio201ThursPM/curated_data/species_avg_shared.csv",
                             delim = ",", escape_double = FALSE, 
                             trim_ws = TRUE, na=c("NA"),
                             col_types = list())  %>% 
+  mutate_if(is.numeric, round, digits = 0) %>%
   column_to_rownames(var = "participant_id_week") %>% 
   as.matrix() %>%   #convert data frame to matrix object
   otu_table(., taxa_are_rows = FALSE) #specify type of phyloseq object
@@ -60,7 +62,7 @@ sv_table <- read_delim("~/Documents/Bio201ThursPM/curated_data/species_avg_share
 ### Taxa 
 Import taxonomy table and format for phyloseq.
 ```{r}
-taxa <- read_delim("~/Documents/Bio201ThursPM/curated_data/seqvar_classifications.csv",
+taxa <- read_delim("C:/Users/moonl/Desktop/Bio201ThursPM/curated_data/seqvar_classifications.csv",
                             delim = ",", escape_double = FALSE, 
                             trim_ws = TRUE, na=c("NA"),
                             col_types = list()) %>%
@@ -72,17 +74,17 @@ taxa <- read_delim("~/Documents/Bio201ThursPM/curated_data/seqvar_classification
 ### Participant data 
 Import sample data (where a sample is an individual microbiome sample) and format for phyloseq.
 ```{r}
-all_data_wkly <- read_delim("~/Documents/Bio201ThursPM/raw_data/all_data_wkly.txt", 
+all_data_wkly <- read_delim("C:/Users/moonl/Desktop/Bio201ThursPM/raw_data/all_data_wkly.txt", 
                             delim = "\t", escape_double = FALSE, 
                             trim_ws = TRUE, 
                             col_types = cols(Bristol_numeric = col_number(),
                                              Bristol_score = col_character(), 
                                              pH = col_number())) %>% 
   rename_all(tolower) %>% 
-  rename(participant_id_week = participant_id)
+  mutate(participant_id_week = participant_id)
   
   
-all_data_wkly$participant_id_week = paste(all_data_wkly$participant_id_week,
+all_data_wkly$participant_id_week = paste(all_data_wkly$participant_id,
                                                  all_data_wkly$study_week, 
                                                  sep="_")  #match with "sv_table"
 
@@ -116,19 +118,41 @@ There are numerous alpha diversity metrics, however we are going to focus on num
 ```{r}
 # Caculate richness
 
+richness_df <- physq_obj %>%
+  subset_samples(., semester != "Winter2015") %>% #subset for semesters of interest
+  subset_samples(., study_week == "week1" | study_week == "week3") %>% #subset for weeks of interest
+  estimate_richness(., split = TRUE,  measures = c("Observed")) %>% #calculate richness
+  rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
+  rename(richness = Observed) %>%
+  group_by(participant_id_week) 
+  
 
 # save richness data 
+write_delim(richness_df, path = "C:/Users/moonl/Desktop/Bio201ThursPM/curated_data/richness_df.txt", delim = "\t")
 
-
-#Conclusion:
 
 ```
 
 ### Plot richness
 ```{r}
 # Plot richness
+rich1 <- physq_obj %>%
+  subset_samples(., semester != "Winter2015") %>% 
+  subset_samples(., study_week == "week1" | study_week == "week3") %>%
+  plot_richness(., "study_week", measures = c("Observed")) +
+  ylab("Richness (Observed ESVs)") + xlab(NULL)
+
+rich2 <- rich1 +   
+  geom_violin(aes(color = study_week)) + #add violin in color
+  geom_jitter(aes(color = study_week)) +  #add individual points in color 
+  theme(legend.position = "none")
+rich2
 
 # save plot
+save_plot(filename = "C:/Users/moonl/Desktop/Bio201ThursPM/figures/rich2.pdf",
+          plot = rich2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
 
 ```
 
@@ -138,20 +162,40 @@ To calculate Simpson diveristy index we repeat the process above for calcuating 
 
 ### Calculate simpson
 ```{r}
-
+simpson_df <- physq_obj %>%
+  subset_samples(., semester != "Winter2015") %>% #subset for semesters of interest
+  subset_samples(., study_week == "week1" | study_week == "week3") %>% #subset for weeks of interest
+  estimate_richness(., split = TRUE,  measures = c("Simpson")) %>% #calculate simpson
+  rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
+  rename(simpson = Simpson) %>%
+  group_by(participant_id_week) 
 
 # save Simpson data 
-
+write_delim(richness_df, path = "C:/Users/moonl/Desktop/Bio201ThursPM/curated_data/simpson_df.txt", delim = "\t")
 
 ```
 
 ### Plot simpson 
 ```{r}
 # Simpson 
+simp1 <- physq_obj %>%
+  subset_samples(., semester != "Winter2015") %>% 
+  subset_samples(., study_week == "week1" | study_week == "week3") %>%
+  plot_richness(., "study_week", measures = c("Simpson")) +
+  ylab("Simpson 1-D") + xlab(NULL)
+simp1$layers <- simp1$layers[-1] #drop geom_point 
+simp2 <- simp1 +   
+  geom_violin(aes(color = study_week)) + #add violin in color
+  geom_jitter(aes(color = study_week)) +  #add individual points in color 
+  theme(legend.position = "none")
+simp2
 
 
 # save plot
-
+save_plot(filename = "C:/Users/moonl/Desktop/Bio201ThursPM/figures/simp2.pdf",
+          plot = rich2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
 
 ```
 
@@ -161,7 +205,16 @@ To determine if a community is even or uneven, we use stacked bar plots as a rel
 
 ### Data transformation
 ```{r}
+physq_sub <- physq_obj %>%
+  subset_samples(quantity_compliant == "yes") %>%
+  subset_samples(study_week == "week1" | study_week == "week3")%>%
+  subset_samples(supplement_consumed == "BRMPS")
+physq_sub
 
+physq_long <- physq_sub %>%
+  psmelt() %>%
+  rename_all(tolower) %>%
+  select(-quantity_compliant, -starts_with("bristol"), -ph_mean, -ph_median)
 
 ```
 
