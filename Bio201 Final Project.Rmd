@@ -222,10 +222,32 @@ physq_long <- physq_sub %>%
 Now we are ready to make our plot. The same prinicples apply, we are just using a new ggplot function, geom_col(). 
 ```{r}
 # vector of color hex codes 
-
+taxa_colors <- c('#ff7f7f','#33b5e5',
+                '#ffbb33','#aa66cc',
+                '#ff3298', '#99cc00',
+                '#cc0000','#007299',
+                '#cc6c00','#6b238e',
+                '#b20058', '#436500',
+                '#ff4444','#0099cc',
+                '#ff8800','#9933cc',
+                '#e50072', '#669900',
+                '#7f0000','#004c66',
+                '#995100','#3c1451',
+                '#660033', '#2c4c00',
+                '#8ed5f0','#ffb2b2',
+                '#bc93d1','#ffe564',
+                '#d2fe4c','#ff7fbf')
 
 # generate plot
-
+ggplot(data = physq_long, 
+       aes(x = study_week, #specify the arguments for each axis
+           y = abundance)) + #set fill to the taxa rank used for glom
+  geom_col() + #plot type for bars 
+  facet_grid(~semester) + #panel for each semester
+  xlab(NULL) + 
+  theme(axis.text.x = element_text(angle = 90,
+                                   vjust = 0.5)) + #clean up x-axis labels 
+  ylab("Relative Abundance")
 ```
 
 
