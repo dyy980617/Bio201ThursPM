@@ -6,7 +6,7 @@ output: html_document
 ---
 
 Research Question: 
-How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people how have different ?
+How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different fiber diet?
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -93,10 +93,23 @@ diet_w17_ASA2 <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/raw_da
                             col_types = list()) %>% 
   select(Participant_ID,Semester,Fiber_g)
 
+diet_MFP <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/raw_data/diet_MFP.txt", 
+                            delim = "\t", escape_double = FALSE, 
+                            trim_ws = TRUE, 
+                            col_types = list()) %>% 
+  select(Participant_ID,Semester,Fiber_g)
+
+
 diet_1 <- dplyr::union(diet_f15_ASA2, diet_f17_ASA2)
-diet_all <- dplyr::union(diet_1, diet_w17_ASA2)
-low_fiber <- filter(diet_all, Fiber_g < 31) %>% 
-  rename_all(tolower) 
+diet_2 <- dplyr::union(diet_w17_ASA2, diet_MFP)
+diet_all <- dplyr::union(diet_1, diet_2) %>% 
+  add_column(fiber_status = "-") %>% 
+  rename_all(tolower)
+
+diet_all$fiber_status[diet_all$fiber_g >= 32] <- "high"
+diet_all$fiber_status[diet_all$fiber_g < 32 &diet_all$fiber_g > 25] <- "moderate"
+diet_all$fiber_status[diet_all$fiber_g <= 25] <- "low"
+
 ```
 
 ```{r}
@@ -109,20 +122,20 @@ all_data_wkly <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/raw_da
   rename_all(tolower) %>% 
   mutate(participant_id_week = participant_id)
   
-all_data_wkly_lowfib <- inner_join(x = all_data_wkly, y = low_fiber, 
+all_data_wkly_fib <- inner_join(x = all_data_wkly, y = diet_all, 
                                   by = c( "participant_id")) 
   
-all_data_wkly_lowfib$participant_id_week = paste(all_data_wkly_lowfib$participant_id,
-                                                 all_data_wkly_lowfib$study_week, 
+all_data_wkly_fib$participant_id_week = paste(all_data_wkly_fib$participant_id,
+                                                 all_data_wkly_fib$study_week, 
                                                  sep="_")  #match with "sv_table"
 
-all_data_wkly_inner <- inner_join(x = all_data_wkly_lowfib, y = species_avg_shared, 
+all_data_wkly_inner <- inner_join(x = all_data_wkly_fib, y = species_avg_shared, 
                                   by = c( "participant_id_week")) %>% 
                       select( participant_id_week, study_week, semester.x, supplement_consumed,
                               quantity_compliant, frequency, ph_median, ph_mean, bristol_median,
                               bristol_mean, blood_glucose_median, blood_glucose_mean, acetate_median,
                               acetate_mean, butyrate_median ,butyrate_mean, propionate_median,
-                              propionate_mean) %>% 
+                              propionate_mean,fiber_status) %>% 
                       rename(semester = semester.x) %>% 
   
                       distinct(., participant_id_week, .keep_all = TRUE) %>% #remove duplicate participant ids
@@ -148,7 +161,9 @@ There are numerous alpha diversity metrics, however we are going to focus on num
 # Caculate richness
 
 richness_df_fib <- physq_obj %>%
-  subset_samples(., study_week == "week1" | study_week == "week3") %>% #subset for weeks of interest
+  subset_samples(., study_week == "week1" | study_week == "week3") %>% 
+  subset_samples(., fiber_status == "low") %>% #subset for weeks of interest
+ # subset_taxa(Species == starts_with("Bifidobacterium"))
   estimate_richness(., split = TRUE,  measures = c("Observed")) %>% #calculate richness
   rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
   rename(richness = Observed) %>%
@@ -165,12 +180,12 @@ write_delim(richness_df_fib, path = "C:/Users/tina5/OneDrive/桌面/Bio201ThursP
 ```{r}
 # Plot richness
 rich1_fib <- physq_obj %>%
-  subset_samples(., semester != "Winter2015") %>% 
+  subset_samples(., fiber_status == "low") %>% 
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
   plot_richness(., "study_week", measures = c("Observed")) +
   ylab("Richness (Observed ESVs)") + xlab(NULL)
 
-rich2_fib <- rich1 +   
+rich2_fib <- rich1_fib +   
   geom_violin(aes(color = study_week)) + #add violin in color
   geom_jitter(aes(color = study_week)) +  #add individual points in color 
   theme(legend.position = "none")
@@ -178,7 +193,7 @@ rich2_fib
 
 # save plot
 save_plot(filename = "C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/figures/rich2_fib.pdf",
-          plot = rich2,
+          plot = rich2_fib,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
 
@@ -191,7 +206,7 @@ To calculate Simpson diveristy index we repeat the process above for calcuating 
 ### Calculate simpson
 ```{r}
 simpson_df_fib <- physq_obj %>%
-  subset_samples(., semester != "Winter2015") %>% #subset for semesters of interest
+  subset_samples(., fiber_status == "low") %>% 
   subset_samples(., study_week == "week1" | study_week == "week3") %>% #subset for weeks of interest
   estimate_richness(., split = TRUE,  measures = c("Simpson")) %>% #calculate simpson
   rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
@@ -207,7 +222,7 @@ write_delim(simpson_df_fib, path = "C:/Users/tina5/OneDrive/桌面/Bio201ThursPM
 ```{r}
 # Simpson 
 simp1_fib <- physq_obj %>%
-  subset_samples(., semester != "Winter2015") %>% 
+  subset_samples(., fiber_status == "low") %>% 
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
   plot_richness(., "study_week", measures = c("Simpson")) +
   ylab("Simpson 1-D") + xlab(NULL)
@@ -235,7 +250,8 @@ To determine if a community is even or uneven, we use stacked bar plots as a rel
 ```{r}
 physq_sub <- physq_obj %>%
   subset_samples(quantity_compliant == "yes") %>%
-  subset_samples(study_week == "week1" | study_week == "week3")
+  subset_samples(study_week == "week1" | study_week == "week3") %>% 
+  subset_samples(., fiber_status == "low")  
 physq_sub
 
 physq_long <- physq_sub %>%
@@ -286,9 +302,9 @@ This step calculates the diveristy index (using Bray Curtis in the example below
 ```{r}
 # Bray Curtis
 physq_sub <- physq_obj %>%
-   subset_samples(frequency == "2xdaily") %>%
  subset_samples(quantity_compliant == "yes") %>%
-subset_samples(study_week == "week1" | study_week == "week3")
+subset_samples(study_week == "week1" | study_week == "week3") %>% 
+  subset_samples(fiber_status == "high" | fiber_status == "low")
 physq_sub
 
 physq_bc <- ordinate(physq_sub, 
@@ -315,8 +331,8 @@ physq_j
 ordplot1 <- plot_ordination(physeq = physq_sub, 
                      ordination = physq_bc, 
                      type = "samples", 
-                     color = "semester", 
-                     shape = "study_week")
+                     color = "study_week", 
+                     shape = "fiber_status")
 print(ordplot1)
 
 ```
@@ -326,8 +342,8 @@ print(ordplot1)
 ordplot2 <- plot_ordination(physeq = physq_sub, 
                      ordination = physq_j, 
                      type = "samples", 
-                     color = "semester", 
-                     shape = "study_week")
+                     color = "study_week", 
+                     shape = "fiber_status")
 print(ordplot2)
 
 
@@ -343,7 +359,7 @@ sampledf <- physq_sub %>%
   as(., "data.frame") 
 
 
-adn_res <- adonis(formula = dat_bray ~ study_week, 
+adn_res <- adonis(formula = dat_bray ~ study_week * fiber_status, 
                   data = sampledf)
 
 
@@ -362,7 +378,7 @@ sampledf <- physq_sub %>%
   as(., "data.frame") 
 
 
-adn_2 <- adonis(formula = dat_ja ~ study_week, 
+adn_2 <- adonis(formula = dat_ja ~ study_week * fiber_status, 
                   data = sampledf)
 
 
