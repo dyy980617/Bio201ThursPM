@@ -6,7 +6,7 @@ output: html_document
 ---
 
 Research Question: 
-How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different fiber diet?
+How does the consumption of a prebiotic affect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different fiber diet?
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
