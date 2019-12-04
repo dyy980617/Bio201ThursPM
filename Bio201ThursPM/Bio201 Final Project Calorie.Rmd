@@ -232,7 +232,9 @@ richness_df2_cal <- inner_join(x = richness_wk1_cal, y = richness_wk3_cal,
 
 t.test(x = richness_df2_cal$richness_wk1_cal, 
        y = richness_df2_cal$richness_wk3_cal,
-       alternative = "two.sided", paired = TRUE)
+       alternative = "two.sided", paired = TRUE, var.equal = TRUE)
+
+# p-value = 0.03349, significant difference in richness when consumpetion is BRMPS AND calorie status is fixed to low level（Control variable）.
 ```
 
 # Simpson 
@@ -282,6 +284,8 @@ save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_cal.pdf",
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
 
+
+
 ```
 ```{r}
 simpson_df_cal %>% 
@@ -313,58 +317,11 @@ simpson_df2_cal <- inner_join(x = simpson_wk1_cal, y = simpson_wk3_cal,
 wilcox.test(x = simpson_df2_cal$simpson_wk1_cal, 
        y = simpson_df2_cal$simpson_wk3_cal,
        alternative = "two.sided", paired = TRUE)
+
+#  p-value = 0.004256 significant difference in richness when consumpetion is BRMPS AND calorie status is fixed to low level（Control variable）.
 ```
 
-# Evenness
 
-To determine if a community is even or uneven, we use stacked bar plots as a relative measure. Before generating the plot, we have to transform our abundance values from sequence counts to a percentage.
-
-### Data transformation
-```{r}
-physq_sub <- physq_obj %>%
-  subset_samples(quantity_compliant == "yes") %>%
-  subset_samples(study_week == "week1" | study_week == "week3") %>% 
-  subset_samples(., fiber_status == "low")  
-physq_sub
-
-physq_long <- physq_sub %>%
-  psmelt() %>%
-  rename_all(tolower) %>%
-  select(-quantity_compliant, -starts_with("bristol"), -ph_mean, -ph_median)
-
-```
-
-### Generate plot 
-Now we are ready to make our plot. The same prinicples apply, we are just using a new ggplot function, geom_col(). 
-```{r}
-# vector of color hex codes 
-taxa_colors <- c('#ff7f7f','#33b5e5',
-                '#ffbb33','#aa66cc',
-                '#ff3298', '#99cc00',
-                '#cc0000','#007299',
-                '#cc6c00','#6b238e',
-                '#b20058', '#436500',
-                '#ff4444','#0099cc',
-                '#ff8800','#9933cc',
-                '#e50072', '#669900',
-                '#7f0000','#004c66',
-                '#995100','#3c1451',
-                '#660033', '#2c4c00',
-                '#8ed5f0','#ffb2b2',
-                '#bc93d1','#ffe564',
-                '#d2fe4c','#ff7fbf')
-
-# generate plot
-ggplot(data = physq_long, 
-       aes(x = study_week, #specify the arguments for each axis
-           y = abundance)) + #set fill to the taxa rank used for glom
-  geom_col() + #plot type for bars 
-  facet_grid(~semester) + #panel for each semester
-  xlab(NULL) + 
-  theme(axis.text.x = element_text(angle = 90,
-                                   vjust = 0.5)) + #clean up x-axis labels 
-  ylab("Relative Abundance")
-```
 
 
 # Beta diveristy
@@ -411,6 +368,11 @@ ordplot1 <- plot_ordination(physeq = physq_sub,
                      shape = "cal_status")
 print(ordplot1)
 
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_cal.pdf",
+          plot = ordplot1,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
+
 ```
 
 ```{r}
@@ -421,6 +383,10 @@ ordplot2 <- plot_ordination(physeq = physq_sub,
                      color = "study_week", 
                      shape = "cal_status")
 print(ordplot2)
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_cal.pdf",
+          plot = ordplot2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
 
 
 ```
@@ -442,7 +408,16 @@ adn_res <- adonis(formula = dat_bray ~ study_week* cal_status,
 print(adn_res)
 
 # Conclusion
+##p=0.002 base on study week
+##p=0.04 base on cal_status
 
+## I COPIED THE INTERPRETION FROM lab8 TO MAKE IT EASIER.
+
+##Review the output from the adonis function, this format should be slightly familar to you now; we are interested in the R-squared (R2) and the p-value (Pr(>F)) columns. The p-value indicates the groups are statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories (here study week and semester). For this test, an R-squared value close to 1 indicaates dissimilarity between the groups, while an R value near 0 indicates no significant dissimilarity between the groups. 
+
+###In our results above, the p-values of 0.001 indicate that the groupings of samples by semester or by study week is statistically significant. The R value of 0.025 and 0.008 are fairly close to 0, indicating that the grouping of samples based by semester or study week are weak. When this occurs (low p and low R), the variation of the samples in the tested groups likely is influencing the results of the test. 
+
+##R2 ALWAYS small
 ```
 
 ```{r}
@@ -462,6 +437,9 @@ print(adn_2)
 
 
 # Conclusion
+
+#p=0.004 base on study week
+#p=0.004 base on cal_status
 
 ```
 -----

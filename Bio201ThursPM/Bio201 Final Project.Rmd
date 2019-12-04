@@ -191,7 +191,10 @@ richness_df2 <- inner_join(x = richness_wk1, y = richness_wk3,
 
 t.test(x = richness_df2$richness_wk1, 
        y = richness_df2$richness_wk3,
-       alternative = "two.sided", paired = TRUE)
+       alternative = "two.sided", paired = TRUE, var.equal = TRUE)
+
+
+## p-value = 7.263e-05, significant difference in richness from wk1 to wk3, when consumption is BRMPS, 2x daily
 ```
 
 
@@ -274,59 +277,15 @@ simpson_df2 <- inner_join(x = simpson_wk1, y = simpson_wk3,
 wilcox.test(x = simpson_df2$simpson_wk1, 
        y = simpson_df2$simpson_wk3,
        alternative = "two.sided", paired = TRUE)
+
+
+## p-value = 0.004566, significant difference in richness from wk1 to wk3, when consumption is BRMPS, 2x daily
 ```
 
-# Evenness
 
-To determine if a community is even or uneven, we use stacked bar plots as a relative measure. Before generating the plot, we have to transform our abundance values from sequence counts to a percentage.
 
-### Data transformation
-```{r}
-physq_sub <- physq_obj %>%
-  subset_samples(supplement_consumed == "BRMPS")%>%
-   subset_samples(frequency == "2xdaily") %>%
- subset_samples(quantity_compliant == "yes") %>%
-subset_samples(study_week == "week1" | study_week == "week3")
-physq_sub
 
-physq_long <- physq_sub %>%
-  transform_sample_counts(function(x) {x/sum(x)} ) %>%
-  psmelt() %>%
-  rename_all(tolower) %>%
-  select(-quantity_compliant, -starts_with("bristol"), -ph_mean, -ph_median)
-```
 
-### Generate plot 
-Now we are ready to make our plot. The same prinicples apply, we are just using a new ggplot function, geom_col(). 
-```{r}
-# vector of color hex codes 
-taxa_colors <- c('#ff7f7f','#33b5e5',
-                '#ffbb33','#aa66cc',
-                '#ff3298', '#99cc00',
-                '#cc0000','#007299',
-                '#cc6c00','#6b238e',
-                '#b20058', '#436500',
-                '#ff4444','#0099cc',
-                '#ff8800','#9933cc',
-                '#e50072', '#669900',
-                '#7f0000','#004c66',
-                '#995100','#3c1451',
-                '#660033', '#2c4c00',
-                '#8ed5f0','#ffb2b2',
-                '#bc93d1','#ffe564',
-                '#d2fe4c','#ff7fbf')
-
-# generate plot
-ggplot(data = physq_long, 
-       aes(x = study_week, #specify the arguments for each axis
-           y = abundance)) + #set fill to the taxa rank used for glom
-  geom_col() + #plot type for bars 
-  facet_grid(~semester) + #panel for each semester
-  xlab(NULL) + 
-  theme(axis.text.x = element_text(angle = 90,
-                                   vjust = 0.5)) + #clean up x-axis labels 
-  ylab("Relative Abundance")
-```
 
 
 # Beta diveristy
@@ -371,6 +330,11 @@ ordplot1 <- plot_ordination(physeq = physq_sub,
                      shape = "study_week")
 print(ordplot1)
 
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc.pdf",
+          plot = ordplot1,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
+
 ```
 
 ```{r}
@@ -381,6 +345,11 @@ ordplot2 <- plot_ordination(physeq = physq_sub,
                      color = "semester", 
                      shape = "study_week")
 print(ordplot2)
+
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja.pdf",
+          plot = ordplot2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
 
 
 ```
@@ -395,13 +364,19 @@ sampledf <- physq_sub %>%
   as(., "data.frame") 
 
 
-adn_res <- adonis(formula = dat_bray ~  study_week, 
+adn_res <- adonis(formula = dat_bray ~  study_week * semester, 
                   data = sampledf)
 
 
 print(adn_res)
 
 # Conclusion
+##Clarification: ANOSIM give you the P value (i.e. significance levels) and a R value (i.e. the strength of the factors on the samples). R value is supposed to vary between 0 and 1 (not between -1 and +1) but you can obtained negative values but they are always close to 0. R value close to 1 indicates high separation between levels of your factor (e.g. control vs treatment samples), while R value close to 0 indicate no separation between levels of your factor. Be careful with the significance level as it is express as %, so if you want the actual P value you have to divide by 100. 
+
+## for ANOSIM you need to first say if there is significance difference and if yes, you need to give the R value. You could have a significance difference, but if the R value is low (e.g. 0.2) this mean your factor have small effect on your variables and is not really important. So with ANOSIM the R value is more important to some extent than the P value.
+
+
+#p-value for study week varies every time(for first run it is~0.015), but significant difference in diversity of microbial species from wk1 to wk3 when consume BRMPS, 2x daily.(Do not interpret the semester thing I guess, they are supposed to be different.)
 
 ```
 
@@ -414,7 +389,7 @@ sampledf <- physq_sub %>%
   as(., "data.frame") 
 
 
-adn_2 <- adonis(formula = dat_ja ~ semester * study_week, 
+adn_2 <- adonis(formula = dat_ja ~  study_week, 
                   data = sampledf)
 
 
@@ -422,6 +397,7 @@ print(adn_2)
 
 
 # Conclusion
+#p varies(for first run it is 0.07), not much significant difference in diversity of microbial species from wk1 to wk3 when consume BRMPS, 2x daily (bc and ja are both diffence index so the result is in doubt)
 
 ```
 -----

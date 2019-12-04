@@ -232,7 +232,8 @@ richness_df2_fib <- inner_join(x = richness_wk1_fib, y = richness_wk3_fib,
 
 t.test(x = richness_df2_fib$richness_wk1_fib, 
        y = richness_df2_fib$richness_wk3_fib,
-       alternative = "two.sided", paired = TRUE)
+       alternative = "two.sided", paired = TRUE, var.equal = TRUE)
+## p-value = 0.1024, no signicant difference when consuming BRMPS when fiber status is fixed.
 ```
 
 # Simpson 
@@ -267,7 +268,7 @@ simp1_fib <- physq_obj %>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
   plot_richness(., "study_week", measures = c("Simpson")) +
   ylab("Simpson 1-D") + xlab(NULL)
-simp1_fib$layers <- simp1_cal$layers[-1] #drop geom_point 
+simp1_fib$layers <- simp1_fib$layers[-1] #drop geom_point 
 simp2_fib <- simp1_fib +   
   geom_violin(aes(color = study_week)) + #add violin in color
   geom_jitter(aes(color = study_week)) +  #add individual points in color 
@@ -312,58 +313,13 @@ simpson_df2_fib <- inner_join(x = simpson_wk1_fib, y = simpson_wk3_fib,
 wilcox.test(x = simpson_df2_fib$simpson_wk1_fib, 
        y = simpson_df2_fib$simpson_wk3_fib,
        alternative = "two.sided", paired = TRUE)
-```
 
-# Evenness
-
-To determine if a community is even or uneven, we use stacked bar plots as a relative measure. Before generating the plot, we have to transform our abundance values from sequence counts to a percentage.
-
-### Data transformation
-```{r}
-physq_sub <- physq_obj %>%
-  subset_samples(quantity_compliant == "yes") %>%
-  subset_samples(study_week == "week1" | study_week == "week3") %>% 
-  subset_samples(., fiber_status == "low")  
-physq_sub
-
-physq_long <- physq_sub %>%
-  psmelt() %>%
-  rename_all(tolower) %>%
-  select(-quantity_compliant, -starts_with("bristol"), -ph_mean, -ph_median)
+## p-value = 0.001, signicant difference on richness when consuming BRMPS when fiber status is fixed
 
 ```
 
-### Generate plot 
-Now we are ready to make our plot. The same prinicples apply, we are just using a new ggplot function, geom_col(). 
-```{r}
-# vector of color hex codes 
-taxa_colors <- c('#ff7f7f','#33b5e5',
-                '#ffbb33','#aa66cc',
-                '#ff3298', '#99cc00',
-                '#cc0000','#007299',
-                '#cc6c00','#6b238e',
-                '#b20058', '#436500',
-                '#ff4444','#0099cc',
-                '#ff8800','#9933cc',
-                '#e50072', '#669900',
-                '#7f0000','#004c66',
-                '#995100','#3c1451',
-                '#660033', '#2c4c00',
-                '#8ed5f0','#ffb2b2',
-                '#bc93d1','#ffe564',
-                '#d2fe4c','#ff7fbf')
 
-# generate plot
-ggplot(data = physq_long, 
-       aes(x = study_week, #specify the arguments for each axis
-           y = abundance)) + #set fill to the taxa rank used for glom
-  geom_col() + #plot type for bars 
-  facet_grid(~semester) + #panel for each semester
-  xlab(NULL) + 
-  theme(axis.text.x = element_text(angle = 90,
-                                   vjust = 0.5)) + #clean up x-axis labels 
-  ylab("Relative Abundance")
-```
+
 
 
 # Beta diveristy
@@ -409,6 +365,11 @@ ordplot1 <- plot_ordination(physeq = physq_sub,
                      shape = "fiber_status")
 print(ordplot1)
 
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_fib.pdf",
+          plot = ordplot1,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
+
 ```
 
 ```{r}
@@ -419,6 +380,10 @@ ordplot2 <- plot_ordination(physeq = physq_sub,
                      color = "study_week", 
                      shape = "fiber_status")
 print(ordplot2)
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_fib.pdf",
+          plot = ordplot2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
 
 
 ```
@@ -440,7 +405,8 @@ adn_res <- adonis(formula = dat_bray ~ study_week * fiber_status,
 print(adn_res)
 
 # Conclusion
-
+##p=0.003 on study_week
+##0.001 on fiber_status
 ```
 
 ```{r}
@@ -460,7 +426,8 @@ print(adn_2)
 
 
 # Conclusion
-
+##p=0.002 on study_week
+##0.001 on fiber_status
 ```
 -----
 end
