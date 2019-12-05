@@ -1,12 +1,12 @@
 ---
-title: "Bio201 Final Project Calorie"
+title: "Bio201 Final Project Fiber_high"
 author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei", "Clarissa Halim" 
 date: "11/18/2019"
 output: html_document
 ---
 
 Research Question: 
-How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different calories diet?
+How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different fiber diet?
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -75,39 +75,40 @@ taxa <- read_delim("~/Documents/Bio201ThursPM/curated_data/seqvar_classification
 Import sample data (where a sample is an individual microbiome sample) and format for phyloseq.
 ```{r}
 #select high calorie diet participant
-diet_f15_ASA2_cal <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_f15_ASA2.txt", 
+diet_f15_ASA2 <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_f15_ASA2.txt", 
                             delim = "\t", escape_double = FALSE, 
                             trim_ws = TRUE, 
                             col_types = list()) %>%   
-  select(Participant_ID,Semester,Calories)
+  select(Participant_ID,Semester,Fiber_g)
 
-diet_f17_ASA2_cal <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_f17_ASA2.txt", 
+diet_f17_ASA2 <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_f17_ASA2.txt", 
                             delim = "\t", escape_double = FALSE, 
                             trim_ws = TRUE, 
                             col_types = list()) %>% 
-  select(Participant_ID,Semester,Calories)
+  select(Participant_ID,Semester,Fiber_g)
   
-diet_w17_ASA2_cal <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_w17_ASA2.txt", 
+diet_w17_ASA2 <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_w17_ASA2.txt", 
                             delim = "\t", escape_double = FALSE, 
                             trim_ws = TRUE, 
                             col_types = list()) %>% 
-  select(Participant_ID,Semester,Calories)
+  select(Participant_ID,Semester,Fiber_g)
 
-diet_MFP_cal <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_MFP.txt", 
+diet_MFP <- read_delim("~/Documents/Bio201ThursPM/raw_data/diet_MFP.txt", 
                             delim = "\t", escape_double = FALSE, 
                             trim_ws = TRUE, 
                             col_types = list()) %>% 
-  select(Participant_ID,Semester,Calories)
+  select(Participant_ID,Semester,Fiber_g)
 
 
-diet_1_cal <- dplyr::union(diet_f15_ASA2_cal, diet_f17_ASA2_cal)
-diet_2_cal <- dplyr::union(diet_w17_ASA2_cal, diet_MFP_cal)
-diet_all_cal <- dplyr::union(diet_1_cal, diet_2_cal) %>% 
-  add_column(cal_status = "-") %>% 
+diet_1 <- dplyr::union(diet_f15_ASA2, diet_f17_ASA2)
+diet_2 <- dplyr::union(diet_w17_ASA2, diet_MFP)
+diet_all <- dplyr::union(diet_1, diet_2) %>% 
+  add_column(fiber_status = "-") %>% 
   rename_all(tolower)
 
-diet_all_cal$cal_status[diet_all_cal$calories > 2500] <- "high"
-diet_all_cal$cal_status[diet_all_cal$calories <= 2500] <- "low"
+diet_all$fiber_status[diet_all$fiber_g >= 32] <- "high"
+diet_all$fiber_status[diet_all$fiber_g < 32 &diet_all$fiber_g > 25] <- "moderate"
+diet_all$fiber_status[diet_all$fiber_g <= 25] <- "low"
 
 ```
 
@@ -121,20 +122,20 @@ all_data_wkly <- read_delim("~/Documents/Bio201ThursPM/raw_data/all_data_wkly.tx
   rename_all(tolower) %>% 
   mutate(participant_id_week = participant_id)
   
-all_data_wkly_cal <- inner_join(x = all_data_wkly, y = diet_all_cal, 
+all_data_wkly_fib <- inner_join(x = all_data_wkly, y = diet_all, 
                                   by = c( "participant_id")) 
   
-all_data_wkly_cal$participant_id_week = paste(all_data_wkly_cal$participant_id,
-                                                 all_data_wkly_cal$study_week, 
+all_data_wkly_fib$participant_id_week = paste(all_data_wkly_fib$participant_id,
+                                                 all_data_wkly_fib$study_week, 
                                                  sep="_")  #match with "sv_table"
 
-all_data_wkly_inner <- inner_join(x = all_data_wkly_cal, y = species_avg_shared, 
+all_data_wkly_inner <- inner_join(x = all_data_wkly_fib, y = species_avg_shared, 
                                   by = c( "participant_id_week")) %>% 
                       select( participant_id_week, study_week, semester.x, supplement_consumed,
                               quantity_compliant, frequency, ph_median, ph_mean, bristol_median,
                               bristol_mean, blood_glucose_median, blood_glucose_mean, acetate_median,
                               acetate_mean, butyrate_median ,butyrate_mean, propionate_median,
-                              propionate_mean,cal_status) %>% 
+                              propionate_mean,fiber_status) %>% 
                       rename(semester = semester.x) %>% 
   
                       distinct(., participant_id_week, .keep_all = TRUE) %>% #remove duplicate participant ids
@@ -159,22 +160,21 @@ There are numerous alpha diversity metrics, however we are going to focus on num
 ```{r}
 # Caculate richness
 
-richness_df_cal <- physq_obj %>%
-  subset_samples(study_week == "week1" | study_week == "week3") %>% 
-  subset_samples(supplement_consumed == "BRMPS")%>%
+richness_df_fib <- physq_obj %>%
   subset_samples(quantity_compliant == "yes") %>%
-  subset_samples(cal_status == "low") %>% #subset for weeks of interest
+  subset_samples(., study_week == "week1" | study_week == "week3") %>% 
+   subset_samples(supplement_consumed == "BRMPS")%>%
+  subset_samples(., fiber_status == "high") %>% #subset for weeks of interest
  # subset_taxa(Species == starts_with("Bifidobacterium"))
   estimate_richness(., split = TRUE,  measures = c("Observed")) %>% #calculate richness
   rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
-  
-  inner_join(all_data_wkly_cal, by = "participant_id_week")%>%
+  inner_join(all_data_wkly_fib, by = "participant_id_week")%>%
 select(participant_id, study_week, Observed)%>%
-  rename(richness_cal = Observed) 
+  rename(richness_fib = Observed) 
  
 
 # save richness data 
-write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_cal.txt", delim = "\t")
+write_delim(richness_df_fib, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_fib_high.txt", delim = "\t")
 
 
 ```
@@ -182,59 +182,58 @@ write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/rich
 ### Plot richness
 ```{r}
 # Plot richness
-rich1_cal <- physq_obj %>%
-  subset_samples(., cal_status == "low") %>% 
+rich1_fib <- physq_obj %>%
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(quantity_compliant == "yes") %>%
+  subset_samples(., fiber_status == "high") %>% 
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
   plot_richness(., "study_week", measures = c("Observed")) +
   ylab("Richness (Observed ESVs)") + xlab(NULL)
 
-rich2_cal <- rich1_cal +   
+rich2_fib <- rich1_fib +   
   geom_violin(aes(color = study_week)) + #add violin in color
   geom_jitter(aes(color = study_week)) +  #add individual points in color 
   theme(legend.position = "none")
-rich2_cal
+rich2_fib
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_cal.pdf",
-          plot = rich2_cal,
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_fib_high.pdf",
+          plot = rich2_fib,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
 
 ```
 ```{r}
-richness_df_cal %>% 
+richness_df_fib%>% 
   group_by(study_week) %>%
 summarise(sample_size = n())
 
-richness_normal_cal<-richness_df_cal 
+richness_normal_fib<-richness_df_fib 
 
-  shapiro.test(richness_normal_cal$richness_cal)
-ggplot(richness_normal_cal, aes(x=richness_cal)) +
+  shapiro.test(richness_normal_fib$richness_fib)
+ggplot(richness_normal_fib, aes(x=richness_fib)) +
   geom_histogram() 
-qqnorm(richness_normal_cal$richness_cal); qqline(richness_normal_cal$richness_cal)
+qqnorm(richness_normal_fib$richness_fib); qqline(richness_normal_fib$richness_fib)
 
-richness_wk1_cal<- richness_df_cal%>%
+richness_wk1_fib<- richness_df_fib%>%
   filter(study_week == "week1") 
-richness_wk3_cal <- richness_df_cal %>%
+richness_wk3_fib <- richness_df_fib %>%
   filter(study_week == "week3") 
-var.test(x = richness_wk1_cal$richness_cal, 
-         y = richness_wk3_cal$richness_cal, 
+var.test(x = richness_wk1_fib$richness_fib, 
+         y = richness_wk3_fib$richness_fib, 
          alternative = "two.sided")
 
 
-richness_df2_cal <- inner_join(x = richness_wk1_cal, y = richness_wk3_cal,
+richness_df2_fib <- inner_join(x = richness_wk1_fib, y = richness_wk3_fib,
                     by = c("participant_id")) %>% 
-  rename(richness_wk1_cal = richness_cal.x,
-         richness_wk3_cal = richness_cal.y) 
+  rename(richness_wk1_fib = richness_fib.x,
+         richness_wk3_fib = richness_fib.y) 
   
 
-t.test(x = richness_df2_cal$richness_wk1_cal, 
-       y = richness_df2_cal$richness_wk3_cal,
+wilcox.test(x = richness_df2_fib$richness_wk1_fib, 
+       y = richness_df2_fib$richness_wk3_fib,
        alternative = "two.sided", paired = TRUE, var.equal = TRUE)
-
-# p-value = 0.03349, significant difference in richness when consumpetion is BRMPS AND calorie status is fixed to low level（Control variable）.
+## p-value = 0.1024, no signicant difference when consuming BRMPS when fiber status is fixed.
 ```
 
 # Simpson 
@@ -243,83 +242,82 @@ To calculate Simpson diveristy index we repeat the process above for calcuating 
 
 ### Calculate simpson
 ```{r}
-simpson_df_cal <- physq_obj %>%
-  subset_samples(., cal_status == "low") %>% 
+simpson_df_fib <- physq_obj %>%
   subset_samples(quantity_compliant == "yes") %>%
   subset_samples(supplement_consumed == "BRMPS")%>%
+  subset_samples(., fiber_status == "high") %>% 
   subset_samples(., study_week == "week1" | study_week == "week3") %>% #subset for weeks of interest
   estimate_richness(., split = TRUE,  measures = c("Simpson")) %>% #calculate simpson
   rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
-  
-  inner_join(all_data_wkly_cal, by = "participant_id_week")%>%
+  inner_join(all_data_wkly_fib, by = "participant_id_week")%>%
 select(participant_id, study_week, Simpson)%>%
-  rename(simpson_cal = Simpson) 
+  rename(simpson_fib = Simpson) 
 
 # save Simpson data 
-write_delim(simpson_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_cal.txt", delim = "\t")
+write_delim(simpson_df_fib, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_fib_high.txt", delim = "\t")
 
 ```
 
 ### Plot simpson 
 ```{r}
 # Simpson 
-simp1_cal <- physq_obj %>%
-  subset_samples(., cal_status == "low") %>% 
-  subset_samples(supplement_consumed == "BRMPS")%>%
+simp1_fib <- physq_obj %>%
   subset_samples(quantity_compliant == "yes") %>%
+  subset_samples(., fiber_status == "high") %>% 
+  subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
   plot_richness(., "study_week", measures = c("Simpson")) +
   ylab("Simpson 1-D") + xlab(NULL)
-simp1_cal$layers <- simp1_cal$layers[-1] #drop geom_point 
-simp2_cal <- simp1_cal +   
+simp1_fib$layers <- simp1_fib$layers[-1] #drop geom_point 
+simp2_fib <- simp1_fib +   
   geom_violin(aes(color = study_week)) + #add violin in color
   geom_jitter(aes(color = study_week)) +  #add individual points in color 
   theme(legend.position = "none")
-simp2_cal
+simp2_fib
 
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_cal.pdf",
-          plot = simp2_cal,
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_fib_high.pdf",
+          plot = simp2_fib,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
 
-
-
 ```
 ```{r}
-simpson_df_cal %>% 
+simpson_df_fib%>% 
   group_by(study_week) %>%
 summarise(sample_size = n())
 
-simpson_normal_cal<-simpson_df_cal 
+simpson_normal_fib<-simpson_df_fib 
 
-  shapiro.test(simpson_normal_cal$simpson_cal)
-ggplot(simpson_normal_cal, aes(x=simpson_cal)) +
+  shapiro.test(simpson_normal_fib$simpson_fib)
+ggplot(simpson_normal_fib, aes(x=simpson_fib)) +
   geom_histogram() 
-qqnorm(simpson_normal_cal$simpson_cal); qqline(simpson_normal_cal$simpson_cal)
+qqnorm(simpson_normal_fib$simpson_fib); qqline(simpson_normal_fib$simpson_fib)
 
-simpson_wk1_cal<- simpson_df_cal%>%
+simpson_wk1_fib<- simpson_df_fib%>%
   filter(study_week == "week1") 
-simpson_wk3_cal <- simpson_df_cal %>%
+simpson_wk3_fib <- simpson_df_fib %>%
   filter(study_week == "week3") 
-var.test(x = simpson_wk1_cal$simpson_cal, 
-         y = simpson_wk3_cal$simpson_cal, 
+var.test(x = simpson_wk1_fib$simpson_fib, 
+         y = simpson_wk3_fib$simpson_fib, 
          alternative = "two.sided")
 
 
-simpson_df2_cal <- inner_join(x = simpson_wk1_cal, y = simpson_wk3_cal,
+simpson_df2_fib <- inner_join(x = simpson_wk1_fib, y = simpson_wk3_fib,
                     by = c("participant_id")) %>% 
-  rename(simpson_wk1_cal = simpson_cal.x,
-         simpson_wk3_cal = simpson_cal.y) 
+  rename(simpson_wk1_fib = simpson_fib.x,
+         simpson_wk3_fib = simpson_fib.y) 
   
 
-wilcox.test(x = simpson_df2_cal$simpson_wk1_cal, 
-       y = simpson_df2_cal$simpson_wk3_cal,
+wilcox.test(x = simpson_df2_fib$simpson_wk1_fib, 
+       y = simpson_df2_fib$simpson_wk3_fib,
        alternative = "two.sided", paired = TRUE)
 
-#  p-value = 0.004256 significant difference in richness when consumpetion is BRMPS AND calorie status is fixed to low level（Control variable）.
+## p-value = 0.001, signicant difference on richness when consuming BRMPS when fiber status is fixed
+
 ```
+
 
 
 
@@ -334,10 +332,9 @@ This step calculates the diveristy index (using Bray Curtis in the example below
 physq_sub <- physq_obj %>%
  subset_samples(quantity_compliant == "yes") %>%
   
-subset_samples(supplement_consumed == "BRMPS")%>%
- 
-subset_samples(study_week == "week1" | study_week == "week3")%>%
-subset_samples(cal_status == "low")
+  subset_samples(supplement_consumed == "BRMPS")%>%
+subset_samples(study_week == "week1" | study_week == "week3") %>% 
+  subset_samples( fiber_status == "high")
 physq_sub
 
 physq_bc <- ordinate(physq_sub, 
@@ -365,10 +362,10 @@ ordplot1 <- plot_ordination(physeq = physq_sub,
                      ordination = physq_bc, 
                      type = "samples", 
                      color = "study_week", 
-                     shape = "cal_status")
+                     shape = "fiber_status")
 print(ordplot1)
 
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_cal.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_fib_high.pdf",
           plot = ordplot1,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -381,9 +378,9 @@ ordplot2 <- plot_ordination(physeq = physq_sub,
                      ordination = physq_j, 
                      type = "samples", 
                      color = "study_week", 
-                     shape = "cal_status")
+                     shape = "fiber_status")
 print(ordplot2)
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_cal.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_fib_high.pdf",
           plot = ordplot2,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -405,19 +402,12 @@ adn_res <- adonis(formula = dat_bray ~ study_week,
                   data = sampledf)
 
 
+
 print(adn_res)
 
 # Conclusion
-##p=0.002 base on study week
-##p=0.04 base on cal_status
-
-## I COPIED THE INTERPRETION FROM lab8 TO MAKE IT EASIER.
-
-##Review the output from the adonis function, this format should be slightly familar to you now; we are interested in the R-squared (R2) and the p-value (Pr(>F)) columns. The p-value indicates the groups are statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories (here study week and semester). For this test, an R-squared value close to 1 indicaates dissimilarity between the groups, while an R value near 0 indicates no significant dissimilarity between the groups. 
-
-###In our results above, the p-values of 0.001 indicate that the groupings of samples by semester or by study week is statistically significant. The R value of 0.025 and 0.008 are fairly close to 0, indicating that the grouping of samples based by semester or study week are weak. When this occurs (low p and low R), the variation of the samples in the tested groups likely is influencing the results of the test. 
-
-##R2 ALWAYS small
+##p=0.003 on study_week
+##0.001 on fiber_status
 ```
 
 ```{r}
@@ -429,7 +419,7 @@ sampledf <- physq_sub %>%
   as(., "data.frame") 
 
 
-adn_2 <- adonis(formula = dat_ja ~ study_week , 
+adn_2 <- adonis(formula = dat_ja ~ study_week, 
                   data = sampledf)
 
 
@@ -437,14 +427,8 @@ print(adn_2)
 
 
 # Conclusion
-
-#p=0.004 base on study week
-#p=0.004 base on cal_status
-
-
-#p=0.003for low cal status
-#p~0.9 for high cal status
-
+##p=0.002 on study_week
+##0.001 on fiber_status
 ```
 -----
 end

@@ -1,7 +1,5 @@
 ---
-title: "Bio201 Final Project Calorie"
-author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei", "Clarissa Halim" 
-date: "11/18/2019"
+title: "Bio201 Final Project High Cal"
 output: html_document
 ---
 
@@ -163,7 +161,7 @@ richness_df_cal <- physq_obj %>%
   subset_samples(study_week == "week1" | study_week == "week3") %>% 
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(quantity_compliant == "yes") %>%
-  subset_samples(cal_status == "low") %>% #subset for weeks of interest
+  subset_samples(cal_status == "high") %>% #subset for weeks of interest
  # subset_taxa(Species == starts_with("Bifidobacterium"))
   estimate_richness(., split = TRUE,  measures = c("Observed")) %>% #calculate richness
   rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
@@ -174,7 +172,7 @@ select(participant_id, study_week, Observed)%>%
  
 
 # save richness data 
-write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_cal.txt", delim = "\t")
+write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_cal_high.txt", delim = "\t")
 
 
 ```
@@ -183,7 +181,7 @@ write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/rich
 ```{r}
 # Plot richness
 rich1_cal <- physq_obj %>%
-  subset_samples(., cal_status == "low") %>% 
+  subset_samples(., cal_status == "high") %>% 
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(quantity_compliant == "yes") %>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
@@ -197,7 +195,7 @@ rich2_cal <- rich1_cal +
 rich2_cal
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_cal.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_cal_high.pdf",
           plot = rich2_cal,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -244,7 +242,7 @@ To calculate Simpson diveristy index we repeat the process above for calcuating 
 ### Calculate simpson
 ```{r}
 simpson_df_cal <- physq_obj %>%
-  subset_samples(., cal_status == "low") %>% 
+  subset_samples(., cal_status == "high") %>% 
   subset_samples(quantity_compliant == "yes") %>%
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>% #subset for weeks of interest
@@ -256,7 +254,7 @@ select(participant_id, study_week, Simpson)%>%
   rename(simpson_cal = Simpson) 
 
 # save Simpson data 
-write_delim(simpson_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_cal.txt", delim = "\t")
+write_delim(simpson_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_cal_high.txt", delim = "\t")
 
 ```
 
@@ -264,7 +262,7 @@ write_delim(simpson_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/simps
 ```{r}
 # Simpson 
 simp1_cal <- physq_obj %>%
-  subset_samples(., cal_status == "low") %>% 
+  subset_samples(., cal_status == "high") %>% 
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(quantity_compliant == "yes") %>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
@@ -279,7 +277,7 @@ simp2_cal
 
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_cal.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_cal_high.pdf",
           plot = simp2_cal,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -337,7 +335,7 @@ physq_sub <- physq_obj %>%
 subset_samples(supplement_consumed == "BRMPS")%>%
  
 subset_samples(study_week == "week1" | study_week == "week3")%>%
-subset_samples(cal_status == "low")
+subset_samples(cal_status == "high")
 physq_sub
 
 physq_bc <- ordinate(physq_sub, 
@@ -368,7 +366,7 @@ ordplot1 <- plot_ordination(physeq = physq_sub,
                      shape = "cal_status")
 print(ordplot1)
 
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_cal.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_cal_high.pdf",
           plot = ordplot1,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -383,7 +381,7 @@ ordplot2 <- plot_ordination(physeq = physq_sub,
                      color = "study_week", 
                      shape = "cal_status")
 print(ordplot2)
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_cal.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_cal_high.pdf",
           plot = ordplot2,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
