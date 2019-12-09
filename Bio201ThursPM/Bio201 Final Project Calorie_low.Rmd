@@ -1,9 +1,13 @@
 ---
-title: "Bio201 Final Project Calorie_low"
-author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei", "Clarissa Halim" 
+title: "Bio201 Final Project Calorie Low"
+author: "Yingyue Ding, Kevin Huang, Sunyimeng Lei, Clarissa Halim"
 date: "11/18/2019"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
+
+https://github.com/dyy980617/Bio201ThursPM/tree/master/Bio201ThursPM
 
 Research Question: 
 How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different calories diet?
@@ -35,7 +39,7 @@ Import shared/ESV/OTU table and format for phyloseq. Phyloseq works by matching 
 ```{r}
 #convert txt to valid cvs, I have done this step, and upload "species_avg_shared.csv" to our reporsitory.
 
-#species_avg_shared <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/raw_data/species_avg_shared.txt",
+#species_avg_shared <- read_delim("C:/Users/tina5/OneDrive/Bio201ThursPM/raw_data/species_avg_shared.txt",
 #                            delim = "\t", escape_double = FALSE, 
 #                            trim_ws = TRUE, na=c("NA"),
 #                           col_types = list()) %>%   #import txt
@@ -44,7 +48,7 @@ Import shared/ESV/OTU table and format for phyloseq. Phyloseq works by matching 
 #  species_avg_shared$participant_id_week = paste(species_avg_shared$participant_id_week,
 #                                                 species_avg_shared$Study_week, 
 #                                                 sep="_") #create a combined name
-#write.csv(species_avg_shared,file="C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/curated_data/species_avg_shared.csv",quote=F,row.names = F)
+#write.csv(species_avg_shared,file="C:/Users/tina5/OneDrive/Bio201ThursPM/curated_data/species_avg_shared.csv",quote=F,row.names = F)
 
 
 species_avg_shared<-read_delim("~/Documents/Bio201ThursPM/curated_data/species_avg_shared.csv",

@@ -1,9 +1,10 @@
 ---
-title: "Bio201 Final Project Fiber_high"
-author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei", "Clarissa Halim" 
+title: "Bio201 Final Project Fiber High"
+author: "Yingyue Ding, Kevin Huang, Sunyimeng Lei, Clarissa Halim" 
 date: "11/18/2019"
 output: html_document
 ---
+https://github.com/dyy980617/Bio201ThursPM/tree/master/Bio201ThursPM
 
 Research Question: 
 How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different fiber diet?
@@ -434,5 +435,7 @@ print(adn_2)
 ```
 
 p-value of 0.997 indicates the groups are not statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories.an R value of 0.01558 here indicates no significant dissimilarity between the groups, that the grouping of samples based by study week are weak. the change in the gut microbiome community between Wk1 & Wk3 is not significantly different in people who have a high calorie intake. Thus against our hypothesis.
+
+
 -----
 end
