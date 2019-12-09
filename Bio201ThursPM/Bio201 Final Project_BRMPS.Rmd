@@ -6,7 +6,7 @@ output: html_document
 ---
 
 Research Question: 
-How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance)? 
+How does the consumption of a prebiotic affect the gut microbiomal community(diversity, changes in taxon abundance)? 
 
 In this Rmd we will be testing how consumption of BRMPS 2X daily will effect once gut microbiomal commnity in regard of richness and simpson diversity index, and beta divesity. Our hypothesis is there gonna be significant difference in these index. We did selcet quantity compliant.
 
