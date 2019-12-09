@@ -1,0 +1,405 @@
+---
+title: "Bio201 Final Project BRMPS"
+author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei", "Clarissa Halim" 
+date: "11/18/2019"
+output: html_document
+---
+
+Research Question: 
+How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance)? 
+
+In this Rmd we will be testing how consumption of BRMPS 2X daily will effect once gut microbiomal commnity in regard of richness and simpson diversity index, and beta divesity. Our hypothesis is there gonna be significant difference in these index. We did selcet quantity compliant.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/Documents/Bio201ThursPM/")
+```
+
+# Load packages
+```{r Load packages, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(cowplot)
+library(agricolae)
+library(phyloseq); packageVersion("phyloseq")
+library(vegan)
+set.seed(7)
+```
+
+# Import data
+
+### Sequence variants 
+
+```{r}
+#convert txt to valid cvs, I have done this step, and upload "species_avg_shared.csv" to our reporsitory.
+
+#species_avg_shared <- read_delim("C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/raw_data/species_avg_shared.txt",
+#                            delim = "\t", escape_double = FALSE, 
+#                            trim_ws = TRUE, na=c("NA"),
+#                           col_types = list()) %>%   #import txt
+# rename(participant_id_week = Participant_ID) %>% 
+#  select(-Semester)#don't need
+#  species_avg_shared$participant_id_week = paste(species_avg_shared$participant_id_week,
+#                                                 species_avg_shared$Study_week, 
+#                                                 sep="_") #create a combined name
+#write.csv(species_avg_shared,file="C:/Users/tina5/OneDrive/桌面/Bio201ThursPM/curated_data/species_avg_shared.csv",quote=F,row.names = F)
+
+
+species_avg_shared<-read_delim("~/Documents/Bio201ThursPM/curated_data/species_avg_shared.csv",
+                            delim = ",", escape_double = FALSE, 
+                            trim_ws = TRUE, na=c("NA"),
+                            col_types = list()) 
+sv_table <- read_delim("~/Documents/Bio201ThursPM/curated_data/species_avg_shared.csv",
+                            delim = ",", escape_double = FALSE, 
+                            trim_ws = TRUE, na=c("NA"),
+                            col_types = list())  %>% 
+  mutate_if(is.numeric, round, digits = 0) %>%
+  column_to_rownames(var = "participant_id_week") %>% 
+  as.matrix() %>%   
+  otu_table(., taxa_are_rows = FALSE) 
+
+```
+
+### Taxa 
+Import taxonomy table and format for phyloseq.
+```{r}
+taxa <- read_delim("~/Documents/Bio201ThursPM/curated_data/seqvar_classifications.csv",
+                            delim = ",", escape_double = FALSE, 
+                            trim_ws = TRUE, na=c("NA"),
+                            col_types = list()) %>%
+  column_to_rownames(var = "sv") %>% 
+  as.matrix() %>%
+  tax_table(.)  
+```
+
+### Participant data 
+Import sample data (where a sample is an individual microbiome sample) and format for phyloseq.
+```{r}
+all_data_wkly <- read_delim("~/Documents/Bio201ThursPM/raw_data/all_data_wkly.txt", 
+                            delim = "\t", escape_double = FALSE, 
+                            trim_ws = TRUE, 
+                            col_types = cols(Bristol_numeric = col_number(),
+                                             Bristol_score = col_character(), 
+                                             pH = col_number())) %>% 
+  rename_all(tolower) %>% 
+  mutate(participant_id_week = participant_id)
+  
+  
+all_data_wkly$participant_id_week = paste(all_data_wkly$participant_id,
+                                                 all_data_wkly$study_week, 
+                                                 sep="_") 
+
+all_data_wkly_inner <- inner_join(x = all_data_wkly, y = species_avg_shared, 
+                                  by = c( "participant_id_week")) %>% 
+                      select( participant_id_week, study_week, semester, supplement_consumed,
+                              quantity_compliant, frequency, ph_median, ph_mean, bristol_median,
+                              bristol_mean, blood_glucose_median, blood_glucose_mean, acetate_median,
+                              acetate_mean, butyrate_median ,butyrate_mean, propionate_median,
+                              propionate_mean) %>% 
+  
+                      distinct(., participant_id_week, .keep_all = TRUE) %>% 
+                      column_to_rownames(var = "participant_id_week") %>% 
+                      sample_data(.) 
+
+```
+
+
+# Create phyloseq objects
+
+```{r}
+physq_obj <- phyloseq(sv_table, taxa, all_data_wkly_inner) 
+
+physq_obj  
+```
+
+# Richness
+There are numerous alpha diversity metrics, however we are going to focus on number richness, and Simpson for our analyses. We will calculate, plot, extract information about alpha diversity with the plot_richness() funciton. 
+
+### Calculate richness
+```{r}
+
+richness_df <- physq_obj %>%
+ subset_samples(supplement_consumed == "BRMPS")%>%
+  subset_samples(frequency == "2xdaily") %>%
+ subset_samples(quantity_compliant == "yes") %>%
+subset_samples(study_week == "week1" | study_week == "week3") %>%
+  estimate_richness(., split = TRUE,  measures = c("Observed")) %>% 
+  rownames_to_column(var = "participant_id_week") %>% 
+  inner_join(all_data_wkly, by = "participant_id_week")%>%
+select(participant_id, study_week, Observed)%>%
+  rename(richness = Observed) 
+ 
+  
+
+
+write_delim(richness_df, path = "~/Documents/Bio201ThursPM/curated_data/richness_df.txt", delim = "\t")
+
+
+```
+
+### Plot richness
+```{r}
+
+rich1 <- physq_obj %>%
+ subset_samples(supplement_consumed == "BRMPS")%>%
+   subset_samples(frequency == "2xdaily") %>%
+ subset_samples(quantity_compliant == "yes") %>%
+subset_samples(study_week == "week1" | study_week == "week3") %>%
+  plot_richness(., "study_week", measures = c("Observed")) +
+  ylab("Richness (Observed ESVs)") + xlab(NULL)
+
+rich2 <- rich1 +   
+  geom_violin(aes(color = study_week)) + 
+  geom_jitter(aes(color = study_week)) +  
+  theme(legend.position = "none")
+rich2
+
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2.pdf",
+          plot = rich2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
+
+```
+
+```{r}
+richness_df %>% 
+  group_by(study_week) %>%
+summarise(sample_size = n())
+
+richness_normal<-richness_df 
+
+  shapiro.test(richness_normal$richness)
+ggplot(richness_normal, aes(x=richness)) +
+  geom_histogram() 
+qqnorm(richness_normal$richness); qqline(richness_normal$richness)
+
+richness_wk1<- richness_df%>%
+  filter(study_week == "week1") 
+richness_wk3 <- richness_df %>%
+  filter(study_week == "week3") 
+var.test(x = richness_wk1$richness, 
+         y = richness_wk3$richness, 
+         alternative = "two.sided")
+
+
+richness_df2 <- inner_join(x = richness_wk1, y = richness_wk3,
+                    by = c("participant_id")) %>% 
+  rename(richness_wk1 = richness.x,
+         richness_wk3 = richness.y) 
+  
+
+t.test(x = richness_df2$richness_wk1, 
+       y = richness_df2$richness_wk3,
+       alternative = "two.sided", paired = TRUE, var.equal = TRUE)
+
+
+
+```
+p-value = 7.263e-05, significant difference in richness from wk1 to wk3, when consumption is BRMPS, 2x daily
+
+
+# Simpson 
+
+To calculate Simpson diveristy index we repeat the process above for calcuating richness, the only thing we have to change is the `measures = c("Simpson")` argument for the plot_richness() and estimate_richness() functions. 
+
+### Calculate simpson
+```{r}
+simpson_df <- physq_obj %>%
+ subset_samples(supplement_consumed == "BRMPS")%>%
+   subset_samples(frequency == "2xdaily") %>%
+ subset_samples(quantity_compliant == "yes") %>%
+subset_samples(study_week == "week1" | study_week == "week3") %>% 
+  estimate_richness(., split = TRUE,  measures = c("Simpson")) %>% 
+ 
+rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
+  inner_join(all_data_wkly, by = "participant_id_week")%>%
+select(participant_id, study_week, Simpson)%>%
+  rename(simpson = Simpson) 
+
+ 
+write_delim(simpson_df, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df.txt", delim = "\t")
+
+```
+
+### Plot simpson 
+```{r}
+
+simp1 <- physq_obj %>%
+  subset_samples(supplement_consumed == "BRMPS")%>%
+   subset_samples(frequency == "2xdaily") %>%
+ subset_samples(quantity_compliant == "yes") %>%
+subset_samples(study_week == "week1" | study_week == "week3") %>%
+  plot_richness(., "study_week", measures = c("Simpson")) +
+  ylab("Simpson 1-D") + xlab(NULL)
+simp1$layers <- simp1$layers[-1] 
+simp2 <- simp1 +   
+  geom_violin(aes(color = study_week)) + 
+  geom_jitter(aes(color = study_week)) + 
+  theme(legend.position = "none")
+simp2
+
+
+
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2.pdf",
+          plot = rich2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
+
+```
+```{r}
+simpson_df %>% 
+  group_by(study_week) %>%
+summarise(sample_size = n())
+
+simpson_normal<-simpson_df 
+
+  shapiro.test(simpson_normal$simpson)
+ggplot(simpson_normal, aes(x=simpson)) +
+  geom_histogram() 
+qqnorm(simpson_normal$simpson); qqline(simpson_normal$simpson)
+
+simpson_wk1<- simpson_df%>%
+  filter(study_week == "week1") 
+simpson_wk3 <- simpson_df %>%
+  filter(study_week == "week3") 
+var.test(x = simpson_wk1$simpson, 
+         y = simpson_wk3$simpson, 
+         alternative = "two.sided")
+
+
+simpson_df2 <- inner_join(x = simpson_wk1, y = simpson_wk3,
+                    by = c("participant_id")) %>% 
+  rename(simpson_wk1 = simpson.x,
+         simpson_wk3 = simpson.y) 
+  
+
+wilcox.test(x = simpson_df2$simpson_wk1, 
+       y = simpson_df2$simpson_wk3,
+       alternative = "two.sided", paired = TRUE)
+
+
+
+```
+
+p-value = 0.004566, significant difference in simpson from wk1 to wk3, when consumption is BRMPS, 2x daily
+
+
+
+
+# Beta diveristy
+
+### Conduct ordination analysis
+
+This step calculates the diveristy index (using Bray Curtis in the example below), and does the ranking process of the diveristy indices to generate the information necessary to create a two-dimensional plot. Notice the arguments in the ordinate function; the index, Bray Curtis ("bray") or Jaccard ("jaccard"), is specified in the distance agurment, and with either of these metrics we will use method = "NMDS". The place were you might want to make some modifications is the k (this should be somewhere between 1-3), the maximum number of iterations (more than 100 will take several minutes to calcaulte), and the inital number of interations to try (50 in the example below). These can be modified to reduce the stress, with the goal of a number less than 0.20 (the lower the better). 
+```{r}
+# Bray Curtis
+physq_sub <- physq_obj %>%
+  subset_samples(supplement_consumed == "BRMPS")%>%
+   subset_samples(frequency == "2xdaily") %>%
+ subset_samples(quantity_compliant == "yes") %>%
+subset_samples(study_week == "week1" | study_week == "week3")
+physq_sub
+
+physq_bc <- ordinate(physq_sub, 
+                      method = "NMDS", 
+                      k=2, maxit=100, try=50,
+                      distance = "bray")
+physq_bc
+
+```
+
+```{r}
+# Jaccard
+physq_j <- ordinate(physq_sub, 
+                      method = "NMDS", 
+                      k=2, maxit=100, try=50,
+                      distance = "jaccard")
+physq_j
+
+```
+
+### Plot results and Modifications of ordination plots
+```{r}
+# Bray Curtis
+ordplot1 <- plot_ordination(physeq = physq_sub, 
+                     ordination = physq_bc, 
+                     type = "samples", 
+                     color = "semester", 
+                     shape = "study_week")
+print(ordplot1)
+
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc.pdf",
+          plot = ordplot1,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
+
+```
+
+```{r}
+# Jaccard
+ordplot2 <- plot_ordination(physeq = physq_sub, 
+                     ordination = physq_j, 
+                     type = "samples", 
+                     color = "semester", 
+                     shape = "study_week")
+print(ordplot2)
+
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja.pdf",
+          plot = ordplot2,
+          nrow = 1, ncol = 2,
+          base_aspect_ratio = 1.1) 
+
+
+```
+
+### Statistical test
+```{r}
+# run Bray Curtis test
+dat_bray <- phyloseq::distance(physq_sub, method = "bray") 
+
+sampledf <- physq_sub %>% 
+  sample_data(.) %>% 
+  as(., "data.frame") 
+
+
+adn_res <- adonis(formula = dat_bray ~  study_week * semester, 
+                  data = sampledf)
+set.seed
+
+
+print(adn_res)
+
+
+
+```
+Conclusion for Bray-Curtis test
+
+
+p-value for study week varies every time(for first run it is~0.015), R2 = 0.01354; significant difference in diversity from week 1 to week 3 for 2x consumers of BRMPS, but too low R2 value to determine that fiber supplement was the cause 
+
+
+```{r}
+# run Jaccard test
+dat_ja <- phyloseq::distance(physq_sub, method = "jaccard") 
+
+sampledf <- physq_sub %>% 
+  sample_data(.) %>% 
+  as(., "data.frame") 
+
+
+adn_2 <- adonis(formula = dat_ja ~  study_week, 
+                  data = sampledf)
+
+
+print(adn_2)
+
+
+
+```
+Conclusion for Jaccard test
+
+p varies(for first run it is 0.07)，R2 = 0.01046; less significant difference in diversity from week 1 to week 3 for 2x consumers of BRMPS, but too low R2 value to determine that fiber supplement was the cause
+
+-----
+end

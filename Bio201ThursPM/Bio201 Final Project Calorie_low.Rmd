@@ -1,5 +1,5 @@
 ---
-title: "Bio201 Final Project High Cal"
+title: "Bio201 Final Project Calorie_low"
 author: "Yingyue Ding","Kevin Huang","Sunyimeng Lei", "Clarissa Halim" 
 date: "11/18/2019"
 output: html_document
@@ -8,7 +8,7 @@ output: html_document
 Research Question: 
 How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different calories diet?
 
-Since we got significant difference from BRMPS consumption in the BRMPS Rmd, In this Rmd we will be testing how a fixed routine of high Cal daily with the consumption of BRMPS will effect once gut microbiomal commnity in regard of richness and simpson diversity index, and beta divesity.We selceted for quantity compliant.
+Since we got significant difference from BRMPS consumption in the BRMPS Rmd, In this Rmd we will be testing how a fixed routine of low Cal daily with the consumption of BRMPS will effect once gut microbiomal commnity in regard of richness and simpson diversity index, and beta divesity.We selceted for quantity compliant.
 Our hypothesis is there gonna be significant difference in these index. 
 
 ```{r setup, include=FALSE}
@@ -166,7 +166,7 @@ richness_df_cal <- physq_obj %>%
   subset_samples(study_week == "week1" | study_week == "week3") %>% 
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(quantity_compliant == "yes") %>%
-  subset_samples(cal_status == "high") %>% #subset for weeks of interest
+  subset_samples(cal_status == "low") %>% #subset for weeks of interest
  # subset_taxa(Species == starts_with("Bifidobacterium"))
   estimate_richness(., split = TRUE,  measures = c("Observed")) %>% #calculate richness
   rownames_to_column(var = "participant_id_week") %>% #reverse phyloseq object formatting
@@ -177,7 +177,7 @@ select(participant_id, study_week, Observed)%>%
  
 
 # save richness data 
-write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_cal_high.txt", delim = "\t")
+write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_cal_low.txt", delim = "\t")
 
 
 ```
@@ -186,7 +186,7 @@ write_delim(richness_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/rich
 ```{r}
 # Plot richness
 rich1_cal <- physq_obj %>%
-  subset_samples(., cal_status == "high") %>% 
+  subset_samples(., cal_status == "low") %>% 
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(quantity_compliant == "yes") %>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
@@ -200,7 +200,7 @@ rich2_cal <- rich1_cal +
 rich2_cal
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_cal_high.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_cal_low.pdf",
           plot = rich2_cal,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -239,8 +239,7 @@ t.test(x = richness_df2_cal$richness_wk1_cal,
 
 
 ```
-
-p-value = 0.1081, no significant difference in richness when consumption is BRMPS AND calorie status is fixed to high level.(not reliable since sample size is so small)
+p-value = 0.03349, significant difference in richness when consumpetion is BRMPS AND calorie status is fixed to low level（Control variable).
 
 # Simpson 
 
@@ -249,7 +248,7 @@ To calculate Simpson diveristy index we repeat the process above for calcuating 
 ### Calculate simpson
 ```{r}
 simpson_df_cal <- physq_obj %>%
-  subset_samples(., cal_status == "high") %>% 
+  subset_samples(., cal_status == "low") %>% 
   subset_samples(quantity_compliant == "yes") %>%
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>% #subset for weeks of interest
@@ -261,7 +260,7 @@ select(participant_id, study_week, Simpson)%>%
   rename(simpson_cal = Simpson) 
 
 # save Simpson data 
-write_delim(simpson_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_cal_high.txt", delim = "\t")
+write_delim(simpson_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_cal_low.txt", delim = "\t")
 
 ```
 
@@ -269,7 +268,7 @@ write_delim(simpson_df_cal, path = "~/Documents/Bio201ThursPM/curated_data/simps
 ```{r}
 # Simpson 
 simp1_cal <- physq_obj %>%
-  subset_samples(., cal_status == "high") %>% 
+  subset_samples(., cal_status == "low") %>% 
   subset_samples(supplement_consumed == "BRMPS")%>%
   subset_samples(quantity_compliant == "yes") %>%
   subset_samples(., study_week == "week1" | study_week == "week3") %>%
@@ -284,7 +283,7 @@ simp2_cal
 
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_cal_high.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_cal_low.pdf",
           plot = simp2_cal,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -325,8 +324,7 @@ wilcox.test(x = simpson_df2_cal$simpson_wk1_cal,
 
 
 ```
-
-p-value =0.3258, no significant difference in Simpson when consumpetion is BRMPS AND calorie status is fixed to high level.(not reliable since sample size is so small)
+p-value = 0.004256 significant difference in simpson when consumpetion is BRMPS AND calorie status is fixed to low level（Control variable）.
 
 
 
@@ -343,7 +341,7 @@ physq_sub <- physq_obj %>%
 subset_samples(supplement_consumed == "BRMPS")%>%
  
 subset_samples(study_week == "week1" | study_week == "week3")%>%
-subset_samples(cal_status == "high")
+subset_samples(cal_status == "low")
 physq_sub
 
 physq_bc <- ordinate(physq_sub, 
@@ -374,7 +372,7 @@ ordplot1 <- plot_ordination(physeq = physq_sub,
                      shape = "cal_status")
 print(ordplot1)
 
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_cal_high.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_cal_low.pdf",
           plot = ordplot1,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -389,7 +387,7 @@ ordplot2 <- plot_ordination(physeq = physq_sub,
                      color = "study_week", 
                      shape = "cal_status")
 print(ordplot2)
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_cal_high.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_cal_low.pdf",
           plot = ordplot2,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -416,8 +414,7 @@ print(adn_res)
 
 ```
 
-p-value of 0.963 indicates the groups are not statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories.an R value of 0.01455 here indicates no significant dissimilarity between the groups, that the grouping of samples based by study week are weak. the change in the gut microbiome community between Wk1 & Wk3 is not significantly different in people who have a high calorie intake. Thus against our hypothesis.
-
+p-value of 0.001 indicates the groups are statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories.an R value of 0.012 here indicates no significant dissimilarity between the groups, that the grouping of samples based by study week are weak. When this occurs (low p and low R), the variation of the samples in the tested groups likely is influencing the results of the test.  
 
 ```{r}
 # run Jaccard test
@@ -434,11 +431,10 @@ adn_2 <- adonis(formula = dat_ja ~ study_week ,
 
 print(adn_2)
 
-
-
-
 ```
-p-value of 0.992 indicates the groups are not statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories.an R value of 0.01548 here indicates no significant dissimilarity between the groups, that the grouping of samples based by study week are weak. the change in the gut microbiome community between Wk1 & Wk3 is not significantly different in people who have a high calorie intake. Thus against our hypothesis.
+
+p-value of 0.001 indicates the groups are statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories.an R value of 0.00891 here indicates no significant dissimilarity between the groups, that the grouping of samples based by study week are weak. When this occurs (low p and low R), the variation of the samples in the tested groups likely is influencing the results of the test.  
+
 
 -----
 end

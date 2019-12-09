@@ -8,6 +8,9 @@ output: html_document
 Research Question: 
 How does the consumption of a prebiotic effect the gut microbiomal community(diversity, changes in taxon abundance) among people who have different fiber diet?
 
+Since we got significant difference from BRMPS consumption in the BRMPS Rmd, In this Rmd we will be testing how a fixed routine of low fiber daily with the consumption of BRMPS will effect once gut microbiomal commnity in regard of richness and simpson diversity index, and beta divesity.We selceted for quantity compliant.
+Our hypothesis is there gonna be significant difference in these index. 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = "~/Documents/Bio201ThursPM/")
@@ -174,7 +177,7 @@ select(participant_id, study_week, Observed)%>%
  
 
 # save richness data 
-write_delim(richness_df_fib, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_fib.txt", delim = "\t")
+write_delim(richness_df_fib, path = "~/Documents/Bio201ThursPM/curated_data/richness_df_fib_low.txt", delim = "\t")
 
 
 ```
@@ -197,7 +200,7 @@ rich2_fib <- rich1_fib +
 rich2_fib
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_fib.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/rich2_fib_low.pdf",
           plot = rich2_fib,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -230,11 +233,14 @@ richness_df2_fib <- inner_join(x = richness_wk1_fib, y = richness_wk3_fib,
          richness_wk3_fib = richness_fib.y) 
   
 
-wilcox.test(x = richness_df2_fib$richness_wk1_fib, 
+t.test(x = richness_df2_fib$richness_wk1_fib, 
        y = richness_df2_fib$richness_wk3_fib,
        alternative = "two.sided", paired = TRUE, var.equal = TRUE)
-## p-value = 0.1024, no signicant difference when consuming BRMPS when fiber status is fixed.
+
 ```
+
+p-value = 0.1024, no signicant difference in richness when consuming BRMPS when fiber status is fixed to a low level.
+
 
 # Simpson 
 
@@ -254,7 +260,7 @@ select(participant_id, study_week, Simpson)%>%
   rename(simpson_fib = Simpson) 
 
 # save Simpson data 
-write_delim(simpson_df_fib, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_fib.txt", delim = "\t")
+write_delim(simpson_df_fib, path = "~/Documents/Bio201ThursPM/curated_data/simpson_df_fib_low.txt", delim = "\t")
 
 ```
 
@@ -277,7 +283,7 @@ simp2_fib
 
 
 # save plot
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_fib.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/simp2_fib_low.pdf",
           plot = simp2_fib,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -314,10 +320,10 @@ wilcox.test(x = simpson_df2_fib$simpson_wk1_fib,
        y = simpson_df2_fib$simpson_wk3_fib,
        alternative = "two.sided", paired = TRUE)
 
-## p-value = 0.001, signicant difference on richness when consuming BRMPS when fiber status is fixed
+
 
 ```
-
+p-value = 0.001, signicant difference on simpson when consuming BRMPS when fiber status is fixed to a low level.
 
 
 
@@ -365,7 +371,7 @@ ordplot1 <- plot_ordination(physeq = physq_sub,
                      shape = "fiber_status")
 print(ordplot1)
 
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_fib.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/bc_fib_low.pdf",
           plot = ordplot1,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -380,7 +386,7 @@ ordplot2 <- plot_ordination(physeq = physq_sub,
                      color = "study_week", 
                      shape = "fiber_status")
 print(ordplot2)
-save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_fib.pdf",
+save_plot(filename = "~/Documents/Bio201ThursPM/figures/ja_fib_low.pdf",
           plot = ordplot2,
           nrow = 1, ncol = 2,
           base_aspect_ratio = 1.1) 
@@ -405,10 +411,10 @@ adn_res <- adonis(formula = dat_bray ~ study_week,
 
 print(adn_res)
 
-# Conclusion
-##p=0.003 on study_week
-##0.001 on fiber_status
+
 ```
+p-value of 0.002 indicates the groups are statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories.an R value of 0.013 here indicates no significant dissimilarity between the groups, that the grouping of samples based by study week are weak. When this occurs (low p and low R), the variation of the samples in the tested groups likely is influencing the results of the test.  
+
 
 ```{r}
 # run Jaccard test
@@ -426,9 +432,8 @@ adn_2 <- adonis(formula = dat_ja ~ study_week,
 print(adn_2)
 
 
-# Conclusion
-##p=0.002 on study_week
-##0.001 on fiber_status
+
 ```
+p-value of 0.006 indicates the groups are statistically significant. The R-squared value can be interpretd as the effect size, it shows the percentage of variation explained by the grouping categories.an R value of 0.00946 here indicates no significant dissimilarity between the groups, that the grouping of samples based by study week are weak. When this occurs (low p and low R), the variation of the samples in the tested groups likely is influencing the results of the test.  
 -----
 end
